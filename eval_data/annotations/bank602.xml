@@ -1,0 +1,24 @@
+
+    <annotation>
+        <folder>images</folder>
+        <filename>bank602.png</filename>
+        <size>
+            <width>600</width>
+            <height>452</height>
+            <depth>3</depth>
+        </size>
+        <segmented>0</segmented>
+        <object>
+            <name>visa</name>
+            <pose>Unspecified</pose>
+            <truncated>0</truncated>
+            <occluded>0</occluded>
+            <difficult>0</difficult>
+            <bndbox>
+                <xmin>25</xmin>
+                <ymin>21</ymin>
+                <xmax>269</xmax>
+                <ymax>132</ymax>
+            </bndbox>
+        </object>
+    </annotation>

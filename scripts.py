@@ -9,7 +9,7 @@ import os
 path = os.path.abspath(__file__).split('\\')
 path.pop(len(path) - 1)
 base_dir = '\\'.join(path)
-dir_path = r"C:\Users\artyo\PycharmProjects\rcnn\new_imgs\train\annotations"
+dir_path = r"C:\Users\artyo\PycharmProjects\rcnn\eval_data\annotations"
 
 
 def rewrite_annotations():
