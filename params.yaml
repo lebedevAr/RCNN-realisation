@@ -1,9 +1,9 @@
 train:
-  epochs_num: 10
+  epochs_num: 6
   dataset_path: eval_data
-  weights_name_outs: weights_improved7
+  weights_name_outs: weights_improved71
 
 evaluate:
   weights_name_in: weights.pth
   dataset_path: eval_data
-  detection_threshold: 0.7
+  detection_threshold: 0.8
