@@ -1,3 +1,5 @@
+import json
+
 import cv2
 import numpy as np
 import PIL
@@ -14,9 +16,13 @@ from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torch_snippets import Report
 
-path = os.path.abspath(__file__).split('\\')
+path = os.path.abspath(__file__).split('/')
 path.pop(len(path) - 1)
-base_dir = '\\'.join(path)
+base_dir = '/'.join(path)
+path.pop(len(path) - 1)
+base_dir_for_eval = '/'.join(path)
+
+
 
 # Classes for training
 label_dict = {"visa": 1, 'no_visa': 2}
@@ -61,9 +67,9 @@ class VisaLogoDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, i):
         img = PIL.Image.open(os.path.join(self.root,
-                                          f"{self.image_path}\\" + self.files[i] + ".jpg")).convert("RGB")
+                                          f"{self.image_path}/" + self.files[i] + ".jpg")).convert("RGB")
         ann = xml_to_dict(os.path.join(self.root,
-                                       f"{self.ann_path}\\" + self.files[i] + ".xml"))
+                                       f"{self.ann_path}/" + self.files[i] + ".xml"))
         target = {}
         target["boxes"] = torch.as_tensor([[ann["x1"],
                                             ann["y1"],
@@ -117,8 +123,8 @@ def get_transform(train):
 
 
 def create_trainig_data(dataset_path):
-    images = f'{dataset_path}\\images'
-    annotations = f'{dataset_path}\\annotations'
+    images = f'{dataset_path}/images'
+    annotations = f'{dataset_path}/annotations'
     train_ds = VisaLogoDataset(images, annotations, "./", get_transform(train=True))
     val_ds = VisaLogoDataset(images, annotations, "./", get_transform(train=False))
 
@@ -232,7 +238,7 @@ def train_model(dataset_path, epochs_num, weights_name):
                            log=None, keys=None,
                            device=device)
 
-    torch.save(model.state_dict(), f"{base_dir}\\{weights_name}.pth")
+    torch.save(model.state_dict(), f"{base_dir_for_eval}/{weights_name}.pth")
 
 
 @torch.no_grad()
@@ -308,8 +314,8 @@ def predict(model_compiled, image, orig_image, detection_threshold=0.8):
 
 def predict_on_batch(model_compiled, test_dataset_path, detection_threshold=0.8):
     images_dict = {}
-    for fn in os.listdir(rf"{test_dataset_path}\images"):
-        im, oim = prepro_img(rf'{test_dataset_path}\images\{fn}')
+    for fn in os.listdir(rf"{test_dataset_path}/images"):
+        im, oim = prepro_img(rf'{test_dataset_path}/images/{fn}')
         images_dict[im] = oim
     with torch.no_grad():
         for img in images_dict.keys():
@@ -335,17 +341,17 @@ def predict_on_batch(model_compiled, test_dataset_path, detection_threshold=0.8)
                 cv2.waitKey()
 
 
-def evaluate_model(model_weights_name, eval_dataset_path, detection_threshold=0.8):
+def evaluate_model(model_weights_name, eval_dataset_path, detection_threshold):
     model_compiled = compile_model(model_weights_name)
     result = []
     images_dict = {}
     label_boxes = []
     coordinates = []
-    for fn in os.listdir(rf"{eval_dataset_path}\images"):
-        im, oim = prepro_img(rf'{eval_dataset_path}\images\{fn}')
+    for fn in os.listdir(rf"{eval_dataset_path}/images"):
+        im, oim = prepro_img(rf'{eval_dataset_path}/images/{fn}')
         images_dict[im] = oim
-    for i, fn in enumerate(os.listdir(rf"{eval_dataset_path}\annotations")):
-        tree = ET.parse(rf"{eval_dataset_path}\annotations\{fn}")
+    for i, fn in enumerate(os.listdir(rf"{eval_dataset_path}/annotations")):
+        tree = ET.parse(rf"{eval_dataset_path}/annotations/{fn}")
         root = tree.getroot()
         object_bndbox = root.find('object').find('bndbox')
         xmin = int(object_bndbox.find('xmin').text)
@@ -371,17 +377,14 @@ def evaluate_model(model_weights_name, eval_dataset_path, detection_threshold=0.
                 result.append(0)
         for i in range(len(coordinates)):
             result.append(cosine_similarity([label_boxes[i]], [coordinates[i]])[0][0])
-    return sum(result) / len(result)
+
+    prc_file = os.path.join("evaluate", "score.json")
+    os.makedirs(os.path.join("evaluate"), exist_ok=True)
+
+    with open(prc_file, "w") as fd:
+        json.dump({"Accuracy": sum(result) / len(result)}, fd)
+
+    return f'Accuracy: {sum(result) / len(result)}'
 
 
-if __name__ == '__main__':
-    model = compile_model('weights.pth')
 
-    eval_data = 'eval_data'
-    grade = evaluate_model('weights.pth', eval_data, detection_threshold=0.9)
-    print(f"Current model accuracy is: {grade}")
-
-    test_data = 'data_test'
-    #predict_on_batch(model, test_data)
-
-    #train_model(r'C:\Users\artyo\PycharmProjects\rcnn\dataset', 2, 'weights_improved')

@@ -1,0 +1,21 @@
+stages:
+  train:
+    cmd: python src/train.py
+    deps:
+      - src/train.py
+    params:
+      - train.epochs_num
+      - train.dataset_path
+      - train.weights_name_outs
+
+  evaluate:
+    cmd: python src/evaluate.py
+    params:
+      - evaluate.weights_name_in
+      - evaluate.dataset_path
+      - evaluate.detection_threshold
+    deps:
+      - src/evaluate.py
+    metrics:
+      - evaluate/score.json:
+          cache: false
