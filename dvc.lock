@@ -5,8 +5,8 @@ stages:
     deps:
     - path: src/train.py
       hash: md5
-      md5: ec0f991cfa65712b52fdfd5b92515e8c
-      size: 375
+      md5: 99f08745f00f43e7a8c163ea1f8c497d
+      size: 340
     params:
       params.yaml:
         train.dataset_path: eval_data
@@ -17,12 +17,12 @@ stages:
     deps:
     - path: src/evaluate.py
       hash: md5
-      md5: 7c86ddf285c39855a33d5c82a63d5aa6
-      size: 365
+      md5: 8137c9e29ddfb48d1d5a13eac771e1c1
+      size: 377
     params:
       params.yaml:
         evaluate.dataset_path: eval_data
-        evaluate.detection_threshold: 0.8
+        evaluate.detection_threshold: 0.7
         evaluate.weights_name_in: weights_improved7.pth
     outs:
     - path: evaluate/score.json

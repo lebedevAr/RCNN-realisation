@@ -16,12 +16,11 @@ from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torch_snippets import Report
 
-path = os.path.abspath(__file__).split('/')
+path = os.path.abspath(__file__).split('\\')
 path.pop(len(path) - 1)
-base_dir = '/'.join(path)
+base_dir = '\\'.join(path)
 path.pop(len(path) - 1)
-base_dir_for_eval = '/'.join(path)
-
+base_dir_for_eval = '\\'.join(path)
 
 
 # Classes for training
@@ -67,9 +66,9 @@ class VisaLogoDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, i):
         img = PIL.Image.open(os.path.join(self.root,
-                                          f"{self.image_path}/" + self.files[i] + ".jpg")).convert("RGB")
+                                          f"{self.image_path}\\" + self.files[i] + ".jpg")).convert("RGB")
         ann = xml_to_dict(os.path.join(self.root,
-                                       f"{self.ann_path}/" + self.files[i] + ".xml"))
+                                       f"{self.ann_path}\\" + self.files[i] + ".xml"))
         target = {}
         target["boxes"] = torch.as_tensor([[ann["x1"],
                                             ann["y1"],
@@ -123,10 +122,10 @@ def get_transform(train):
 
 
 def create_trainig_data(dataset_path):
-    images = f'{dataset_path}/images'
-    annotations = f'{dataset_path}/annotations'
-    train_ds = VisaLogoDataset(images, annotations, "./", get_transform(train=True))
-    val_ds = VisaLogoDataset(images, annotations, "./", get_transform(train=False))
+    images = rf'{dataset_path}\images'
+    annotations = rf'{dataset_path}\annotations'
+    train_ds = VisaLogoDataset(images, annotations, ".\\", get_transform(train=True))
+    val_ds = VisaLogoDataset(images, annotations, ".\\", get_transform(train=False))
 
     indices = torch.randperm(len(train_ds)).tolist()
     train_ds = torch.utils.data.Subset(train_ds,
@@ -238,7 +237,7 @@ def train_model(dataset_path, epochs_num, weights_name):
                            log=None, keys=None,
                            device=device)
 
-    torch.save(model.state_dict(), f"{base_dir_for_eval}/{weights_name}.pth")
+    torch.save(model.state_dict(), f"{base_dir_for_eval}\\{weights_name}.pth")
 
 
 @torch.no_grad()
@@ -314,8 +313,8 @@ def predict(model_compiled, image, orig_image, detection_threshold=0.8):
 
 def predict_on_batch(model_compiled, test_dataset_path, detection_threshold=0.8):
     images_dict = {}
-    for fn in os.listdir(rf"{test_dataset_path}/images"):
-        im, oim = prepro_img(rf'{test_dataset_path}/images/{fn}')
+    for fn in os.listdir(rf"{test_dataset_path}\images"):
+        im, oim = prepro_img(rf'{test_dataset_path}\images\{fn}')
         images_dict[im] = oim
     with torch.no_grad():
         for img in images_dict.keys():
@@ -347,11 +346,11 @@ def evaluate_model(model_weights_name, eval_dataset_path, detection_threshold):
     images_dict = {}
     label_boxes = []
     coordinates = []
-    for fn in os.listdir(rf"{eval_dataset_path}/images"):
-        im, oim = prepro_img(rf'{eval_dataset_path}/images/{fn}')
+    for fn in os.listdir(rf"{eval_dataset_path}\images"):
+        im, oim = prepro_img(rf'{eval_dataset_path}\images\{fn}')
         images_dict[im] = oim
-    for i, fn in enumerate(os.listdir(rf"{eval_dataset_path}/annotations")):
-        tree = ET.parse(rf"{eval_dataset_path}/annotations/{fn}")
+    for i, fn in enumerate(os.listdir(rf"{eval_dataset_path}\annotations")):
+        tree = ET.parse(rf"{eval_dataset_path}\annotations\{fn}")
         root = tree.getroot()
         object_bndbox = root.find('object').find('bndbox')
         xmin = int(object_bndbox.find('xmin').text)
