@@ -6,5 +6,5 @@ weights.pth
 weights_improved.pth
 /new_imgs
 /eval_data
-weights_improved7.pth
-weights_improved71.pth
+weights_all_classes.pth
+dataset_all_classes

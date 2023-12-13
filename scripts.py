@@ -9,10 +9,9 @@ import os
 path = os.path.abspath(__file__).split('\\')
 path.pop(len(path) - 1)
 base_dir = '\\'.join(path)
-dir_path = r"C:\Users\artyo\PycharmProjects\rcnn\eval_data\annotations"
 
 
-def rewrite_annotations():
+def rewrite_annotations(dir_path):
     for filename in os.listdir(dir_path):
         cur_path = f"{dir_path}\\{filename}"
         tree = ET.parse(cur_path)
@@ -21,37 +20,37 @@ def rewrite_annotations():
         size_width = size.find('width').text
         size_height = size.find('height').text
         size_depth = size.find('depth').text
-        object_name = 'visa'
         object_bndbox = root.find('object').find('bndbox')
+        object_name = root.find('object').find('name').text
         object_bndbox_xmin = object_bndbox.find('xmin').text
         object_bndbox_ymin = object_bndbox.find('ymin').text
         object_bndbox_xmax = object_bndbox.find('xmax').text
         object_bndbox_ymax = object_bndbox.find('ymax').text
-        new_filename = f"{filename[:-3]}png"
+        new_filename = f"{filename[:-3]}jpg"
         xml_text = f"""
-    <annotation>
-        <folder>images</folder>
-        <filename>{new_filename}</filename>
-        <size>
-            <width>{size_width}</width>
-            <height>{size_height}</height>
-            <depth>{size_depth}</depth>
-        </size>
-        <segmented>0</segmented>
-        <object>
-            <name>{object_name}</name>
-            <pose>Unspecified</pose>
-            <truncated>0</truncated>
-            <occluded>0</occluded>
-            <difficult>0</difficult>
-            <bndbox>
-                <xmin>{object_bndbox_xmin}</xmin>
-                <ymin>{object_bndbox_ymin}</ymin>
-                <xmax>{object_bndbox_xmax}</xmax>
-                <ymax>{object_bndbox_ymax}</ymax>
-            </bndbox>
-        </object>
-    </annotation>"""
+<annotation>
+    <folder>images</folder>
+    <filename>{new_filename}</filename>
+    <size>
+        <width>{size_width}</width>
+        <height>{size_height}</height>
+        <depth>{size_depth}</depth>
+    </size>
+    <segmented>0</segmented>
+    <object>
+        <name>{object_name}</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <occluded>0</occluded>
+        <difficult>0</difficult>
+        <bndbox>
+            <xmin>{object_bndbox_xmin}</xmin>
+            <ymin>{object_bndbox_ymin}</ymin>
+            <xmax>{object_bndbox_xmax}</xmax>
+            <ymax>{object_bndbox_ymax}</ymax>
+        </bndbox>
+    </object>
+</annotation>"""
         with open(cur_path, "w") as f:
             f.writelines(xml_text)
 
@@ -98,4 +97,13 @@ def augment_images(dataset_path, mode="train", expected_images_num=100):
 
 
 if __name__ == '__main__':
-    rewrite_annotations()
+    #augment_images(r'C:\Users\artyo\Desktop\images', 'train', 80)
+    dirr = r"C:\Users\artyo\PycharmProjects\rcnn\dataset_all_classes"
+    # rewrite_annotations(dirr)
+    k = 0
+    for a in os.listdir(rf'{dirr}\annotations'):
+        tree = ET.parse(rf'{dirr}\annotations\{a}')
+        root = tree.getroot()
+        if not os.path.exists(rf'{dirr}\images\{root.find("filename").text}'):
+            k += 1
+    print(k)

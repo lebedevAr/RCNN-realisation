@@ -24,8 +24,8 @@ base_dir_for_eval = '\\'.join(path)
 
 
 # Classes for training
-label_dict = {"visa": 1, 'no_visa': 2}
-reverse_label_dict = {1: "visa", 'no_visa': 2}
+label_dict = {"mastercard": 0, 'mir': 1, 'union pay': 2, 'visa': 3, 'sber': 4, 'urfu': 5}
+reverse_label_dict = {0: "mastercard", 1: 'mir', 2: 'union pay', 3: 'visa', 4: 'sber', 5: 'urfu'}
 
 # Connect to the GPU if one exists.
 if torch.cuda.is_available():
@@ -311,7 +311,7 @@ def predict(model_compiled, image, orig_image, detection_threshold=0.8):
         cv2.waitKey()
 
 
-def predict_on_batch(model_compiled, test_dataset_path, detection_threshold=0.8):
+def predict_on_batch(model_compiled, test_dataset_path, detection_threshold=0.5):
     images_dict = {}
     for fn in os.listdir(rf"{test_dataset_path}\images"):
         im, oim = prepro_img(rf'{test_dataset_path}\images\{fn}')
@@ -320,13 +320,14 @@ def predict_on_batch(model_compiled, test_dataset_path, detection_threshold=0.8)
         for img in images_dict.keys():
             orig_image = images_dict[img]
             outputs = model_compiled(img)
+            print(outputs)
             outputs = [{k: v.to('cpu') for k, v in t.items()} for t in outputs]
             if len(outputs[0]['boxes']) != 0:
                 boxes = outputs[0]['boxes'].data.numpy()
                 scores = outputs[0]['scores'].data.numpy()
                 boxes = boxes[scores >= detection_threshold].astype(np.int32)
                 draw_boxes = boxes.copy()
-                pred_classes = ["visa" for i in outputs[0]['labels'].cpu().numpy()]
+                pred_classes = ['x' for i in outputs[0]['labels'].cpu().numpy()]
                 for j, box in enumerate(draw_boxes):
                     cv2.rectangle(orig_image,
                                   (int(box[0]), int(box[1])),
@@ -386,4 +387,6 @@ def evaluate_model(model_weights_name, eval_dataset_path, detection_threshold):
     return f'Accuracy: {sum(result) / len(result)}'
 
 
-
+if __name__ == '__main__':
+    model = compile_model(r'C:\Users\artyo\PycharmProjects\rcnn\weights_all_classes.pth')
+    predict_on_batch(model, r'C:\Users\artyo\PycharmProjects\rcnn\new_eval')

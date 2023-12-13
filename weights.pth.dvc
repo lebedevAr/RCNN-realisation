@@ -1,0 +1,5 @@
+outs:
+- md5: 86407541ae67d6bdf80ad65e801f8115
+  size: 165722596
+  hash: md5
+  path: weights.pth

@@ -1,0 +1,6 @@
+outs:
+- md5: 9e06efc662e65a71cde9a5654db4021f.dir
+  size: 40203321
+  nfiles: 1038
+  hash: md5
+  path: dataset_all_classes
