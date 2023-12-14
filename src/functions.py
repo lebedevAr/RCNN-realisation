@@ -311,7 +311,7 @@ def predict(model_compiled, image, orig_image, detection_threshold=0.8):
         cv2.waitKey()
 
 
-def predict_on_batch(model_compiled, test_dataset_path, detection_threshold=0.5):
+def predict_on_batch(model_compiled, test_dataset_path, detection_threshold=0.25):
     images_dict = {}
     for fn in os.listdir(rf"{test_dataset_path}\images"):
         im, oim = prepro_img(rf'{test_dataset_path}\images\{fn}')
@@ -320,14 +320,16 @@ def predict_on_batch(model_compiled, test_dataset_path, detection_threshold=0.5)
         for img in images_dict.keys():
             orig_image = images_dict[img]
             outputs = model_compiled(img)
-            print(outputs)
+            #print(outputs)
             outputs = [{k: v.to('cpu') for k, v in t.items()} for t in outputs]
             if len(outputs[0]['boxes']) != 0:
                 boxes = outputs[0]['boxes'].data.numpy()
                 scores = outputs[0]['scores'].data.numpy()
+                labels = outputs[0]['labels'].data.numpy()
+                print(f"The most probable logo is {reverse_label_dict[labels[0]]} with {scores[0]} accuracy")
                 boxes = boxes[scores >= detection_threshold].astype(np.int32)
                 draw_boxes = boxes.copy()
-                pred_classes = ['x' for i in outputs[0]['labels'].cpu().numpy()]
+                pred_classes = [reverse_label_dict[i] for i in outputs[0]['labels'].cpu().numpy()]
                 for j, box in enumerate(draw_boxes):
                     cv2.rectangle(orig_image,
                                   (int(box[0]), int(box[1])),
@@ -342,51 +344,52 @@ def predict_on_batch(model_compiled, test_dataset_path, detection_threshold=0.5)
 
 
 def evaluate_model(model_weights_name, eval_dataset_path, detection_threshold):
-    model_compiled = compile_model(model_weights_name)
-    result = []
-    images_dict = {}
-    label_boxes = []
-    coordinates = []
-    for fn in os.listdir(rf"{eval_dataset_path}\images"):
-        im, oim = prepro_img(rf'{eval_dataset_path}\images\{fn}')
-        images_dict[im] = oim
-    for i, fn in enumerate(os.listdir(rf"{eval_dataset_path}\annotations")):
-        tree = ET.parse(rf"{eval_dataset_path}\annotations\{fn}")
-        root = tree.getroot()
-        object_bndbox = root.find('object').find('bndbox')
-        xmin = int(object_bndbox.find('xmin').text)
-        ymin = int(object_bndbox.find('ymin').text)
-        xmax = int(object_bndbox.find('xmax').text)
-        ymax = int(object_bndbox.find('ymax').text)
-        label_boxes.append([xmin, ymin, xmax, ymax])
-    with torch.no_grad():
-        for img in images_dict.keys():
-            outputs = model_compiled(img)
-            outputs = [{k: v.to('cpu') for k, v in t.items()} for t in outputs]
-            if len(outputs[0]['boxes']) != 0:
-                current_values = []
-                for score in outputs[0]['scores']:
-                    fl_score = float(str(score)[7:-1])
-                    if fl_score > detection_threshold:
-                        current_values.append(fl_score)
-                if len(current_values) == 1:
-                    coordinates.append([t.tolist() for t in outputs[0]['boxes']][0])
-                else:
-                    result.append(0)
-            else:
-                result.append(0)
-        for i in range(len(coordinates)):
-            result.append(cosine_similarity([label_boxes[i]], [coordinates[i]])[0][0])
-
-    prc_file = os.path.join("evaluate", "score.json")
-    os.makedirs(os.path.join("evaluate"), exist_ok=True)
-
-    with open(prc_file, "w") as fd:
-        json.dump({"Accuracy": sum(result) / len(result)}, fd)
-
-    return f'Accuracy: {sum(result) / len(result)}'
+    # model_compiled = compile_model(model_weights_name)
+    # result = []
+    # images_dict = {}
+    # label_boxes = []
+    # coordinates = []
+    # for fn in os.listdir(rf"{eval_dataset_path}\images"):
+    #     im, oim = prepro_img(rf'{eval_dataset_path}\images\{fn}')
+    #     images_dict[im] = oim
+    # for i, fn in enumerate(os.listdir(rf"{eval_dataset_path}\annotations")):
+    #     tree = ET.parse(rf"{eval_dataset_path}\annotations\{fn}")
+    #     root = tree.getroot()
+    #     object_bndbox = root.find('object').find('bndbox')
+    #     xmin = int(object_bndbox.find('xmin').text)
+    #     ymin = int(object_bndbox.find('ymin').text)
+    #     xmax = int(object_bndbox.find('xmax').text)
+    #     ymax = int(object_bndbox.find('ymax').text)
+    #     label_boxes.append([xmin, ymin, xmax, ymax])
+    # with torch.no_grad():
+    #     for img in images_dict.keys():
+    #         outputs = model_compiled(img)
+    #         outputs = [{k: v.to('cpu') for k, v in t.items()} for t in outputs]
+    #         if len(outputs[0]['boxes']) != 0:
+    #             current_values = []
+    #             for score in outputs[0]['scores']:
+    #                 fl_score = float(str(score)[7:-1])
+    #                 if fl_score > detection_threshold:
+    #                     current_values.append(fl_score)
+    #             if len(current_values) == 1:
+    #                 coordinates.append([t.tolist() for t in outputs[0]['boxes']][0])
+    #             else:
+    #                 result.append(0)
+    #         else:
+    #             result.append(0)
+    #     for i in range(len(coordinates)):
+    #         result.append(cosine_similarity([label_boxes[i]], [coordinates[i]])[0][0])
+    #
+    # prc_file = os.path.join("evaluate", "score.json")
+    # os.makedirs(os.path.join("evaluate"), exist_ok=True)
+    #
+    # with open(prc_file, "w") as fd:
+    #     json.dump({"Accuracy": sum(result) / len(result)}, fd)
+    #
+    # return f'Accuracy: {sum(result) / len(result)}'
+    return None
 
 
 if __name__ == '__main__':
-    model = compile_model(r'C:\Users\artyo\PycharmProjects\rcnn\weights_all_classes.pth')
-    predict_on_batch(model, r'C:\Users\artyo\PycharmProjects\rcnn\new_eval')
+    model = compile_model('../weights_all_classes.pth')
+    predict_on_batch(model, '../eval_data')
