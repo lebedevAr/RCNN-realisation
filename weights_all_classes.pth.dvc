@@ -1,5 +1,5 @@
 outs:
-- md5: 59a097f9098090aa694c0ab51fc8e98b
-  size: 165808680
+- md5: 23519d771ee21bf540973113ea577654
+  size: 165829160
   hash: md5
   path: weights_all_classes.pth

@@ -9,9 +9,9 @@ stages:
       size: 340
     params:
       params.yaml:
-        train.dataset_path: C:\Users\artyo\PycharmProjects\rcnn\dataset_all_classes
-        train.epochs_num: 3
-        train.weights_name_outs: weights_all_classes
+        train.dataset_path: C:\Users\artyo\PycharmProjects\rcnn\combined_dataset
+        train.epochs_num: 10
+        train.weights_name_outs: weights_combined_10epochs-2
   evaluate:
     cmd: python src/evaluate.py
     deps:
@@ -22,10 +22,10 @@ stages:
     params:
       params.yaml:
         evaluate.dataset_path: eval_data
-        evaluate.detection_threshold: 0.8
-        evaluate.weights_name_in: weights_all_classes.pth
+        evaluate.detection_threshold: 0.6
+        evaluate.weights_name_in: weights_combined_10epochs.pth
     outs:
     - path: evaluate/score.json
       hash: md5
-      md5: 6d821ee52e2fbf6dcc674a32e5d9cf94
-      size: 17
+      md5: 4c3ccdf0fc78b02b8a07f52a3fb25de8
+      size: 33

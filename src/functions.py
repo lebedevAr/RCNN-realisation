@@ -9,12 +9,11 @@ import os
 import xml.etree.ElementTree as ET
 import torchvision.transforms.functional as F
 import torchvision.transforms.transforms as T
-from numpy import dot
-from numpy.linalg import norm
 from sklearn.metrics.pairwise import cosine_similarity
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torch_snippets import Report
+from tqdm import tqdm
 
 path = os.path.abspath(__file__).split('\\')
 path.pop(len(path) - 1)
@@ -24,8 +23,8 @@ base_dir_for_eval = '\\'.join(path)
 
 
 # Classes for training
-label_dict = {"mastercard": 0, 'mir': 1, 'union pay': 2, 'visa': 3, 'sber': 4, 'urfu': 5}
-reverse_label_dict = {0: "mastercard", 1: 'mir', 2: 'union pay', 3: 'visa', 4: 'sber', 5: 'urfu'}
+label_dict = {"background": 0, "mastercard": 1, 'mir': 2, 'union pay': 3, 'visa': 4, 'sber': 5, 'urfu': 6}
+reverse_label_dict = {0: "background", 1: "mastercard", 2: 'mir', 3: 'union pay', 4: 'visa', 5: 'sber', 6: 'urfu'}
 
 # Connect to the GPU if one exists.
 if torch.cuda.is_available():
@@ -311,13 +310,13 @@ def predict(model_compiled, image, orig_image, detection_threshold=0.8):
         cv2.waitKey()
 
 
-def predict_on_batch(model_compiled, test_dataset_path, detection_threshold=0.25):
+def predict_on_batch(model_compiled, test_dataset_path, detection_threshold=0.6):
     images_dict = {}
     for fn in os.listdir(rf"{test_dataset_path}\images"):
         im, oim = prepro_img(rf'{test_dataset_path}\images\{fn}')
         images_dict[im] = oim
     with torch.no_grad():
-        for img in images_dict.keys():
+        for num, img in enumerate(images_dict.keys()):
             orig_image = images_dict[img]
             outputs = model_compiled(img)
             #print(outputs)
@@ -335,61 +334,62 @@ def predict_on_batch(model_compiled, test_dataset_path, detection_threshold=0.25
                                   (int(box[0]), int(box[1])),
                                   (int(box[2]), int(box[3])),
                                   (0, 0, 255), 2)
-                    cv2.putText(orig_image, pred_classes[j],
+                    cv2.putText(orig_image, f"{pred_classes[j]} -{round(scores[j], 2)}",
                                 (int(box[0]), int(box[1] - 5)),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0),
                                 2, lineType=cv2.LINE_AA)
                 cv2.imshow('Prediction', orig_image)
+                #cv2.imwrite(f'predicted-comb-{num}.jpg', orig_image)
                 cv2.waitKey()
 
 
 def evaluate_model(model_weights_name, eval_dataset_path, detection_threshold):
-    # model_compiled = compile_model(model_weights_name)
-    # result = []
-    # images_dict = {}
-    # label_boxes = []
-    # coordinates = []
-    # for fn in os.listdir(rf"{eval_dataset_path}\images"):
-    #     im, oim = prepro_img(rf'{eval_dataset_path}\images\{fn}')
-    #     images_dict[im] = oim
-    # for i, fn in enumerate(os.listdir(rf"{eval_dataset_path}\annotations")):
-    #     tree = ET.parse(rf"{eval_dataset_path}\annotations\{fn}")
-    #     root = tree.getroot()
-    #     object_bndbox = root.find('object').find('bndbox')
-    #     xmin = int(object_bndbox.find('xmin').text)
-    #     ymin = int(object_bndbox.find('ymin').text)
-    #     xmax = int(object_bndbox.find('xmax').text)
-    #     ymax = int(object_bndbox.find('ymax').text)
-    #     label_boxes.append([xmin, ymin, xmax, ymax])
-    # with torch.no_grad():
-    #     for img in images_dict.keys():
-    #         outputs = model_compiled(img)
-    #         outputs = [{k: v.to('cpu') for k, v in t.items()} for t in outputs]
-    #         if len(outputs[0]['boxes']) != 0:
-    #             current_values = []
-    #             for score in outputs[0]['scores']:
-    #                 fl_score = float(str(score)[7:-1])
-    #                 if fl_score > detection_threshold:
-    #                     current_values.append(fl_score)
-    #             if len(current_values) == 1:
-    #                 coordinates.append([t.tolist() for t in outputs[0]['boxes']][0])
-    #             else:
-    #                 result.append(0)
-    #         else:
-    #             result.append(0)
-    #     for i in range(len(coordinates)):
-    #         result.append(cosine_similarity([label_boxes[i]], [coordinates[i]])[0][0])
-    #
-    # prc_file = os.path.join("evaluate", "score.json")
-    # os.makedirs(os.path.join("evaluate"), exist_ok=True)
-    #
-    # with open(prc_file, "w") as fd:
-    #     json.dump({"Accuracy": sum(result) / len(result)}, fd)
-    #
-    # return f'Accuracy: {sum(result) / len(result)}'
-    return None
+    model_compiled = compile_model(model_weights_name)
+    result = []
+    label_boxes = {}
+    for i, fn in enumerate(os.listdir(rf"{eval_dataset_path}\annotations")):
+        tree = ET.parse(rf"{eval_dataset_path}\annotations\{fn}")
+        root = tree.getroot()
+        object_bndbox = root.find('object').find('bndbox')
+        xmin = int(object_bndbox.find('xmin').text)
+        ymin = int(object_bndbox.find('ymin').text)
+        xmax = int(object_bndbox.find('xmax').text)
+        ymax = int(object_bndbox.find('ymax').text)
+        label_boxes[fn.split('.')[0]] = [xmin, ymin, xmax, ymax], [root.find('object').find('name').text]
+
+    for fn in tqdm(os.listdir(rf"{eval_dataset_path}\images"), desc='Evaluating model'):
+        im, oim = prepro_img(rf'{eval_dataset_path}\images\{fn}')
+        with torch.no_grad():
+            outputs = model_compiled(im)
+            outputs = [{k: v.to('cpu') for k, v in t.items()} for t in outputs]
+            if not len(outputs[0]['boxes']) != 0:
+                result.append(0)
+            else:
+                score = float(str(outputs[0]['scores'][0])[7:-1])
+                if not score > detection_threshold:
+                    result.append(0)
+                else:
+                    boxes = outputs[0]['boxes'][0].tolist()
+                    filename = fn.split('.')[0]
+                    label_index = int(str(outputs[0]['labels'][0])[7:-1])
+                    predicted_class = reverse_label_dict[label_index]
+                    if not predicted_class == label_boxes[filename][1][0]:
+                        result.append(0)
+                    else:
+                        result.append(cosine_similarity([boxes], [label_boxes[filename][0]])[0][0])
+    avg_acc = sum(result) / len(result)
+    #metrics.auc()
+
+    prc_file = os.path.join("evaluate", "score.json")
+    os.makedirs(os.path.join("evaluate"), exist_ok=True)
+
+    with open(prc_file, "w") as fd:
+        json.dump({"Accuracy": avg_acc}, fd)
+
+    return f'Accuracy: {avg_acc} with {detection_threshold} detection threshold'
 
 
 if __name__ == '__main__':
-    model = compile_model('../weights_all_classes.pth')
-    predict_on_batch(model, '../eval_data')
+    #model = compile_model('../weights_combined_10epochs.pth')
+    #predict_on_batch(model, '../new_eval_data')
+    print(evaluate_model('../weights_combined_10epochs.pth', '../new_eval_data', 0.6))

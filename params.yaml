@@ -1,9 +1,9 @@
 train:
-  epochs_num: 3
-  dataset_path: C:\Users\artyo\PycharmProjects\rcnn\dataset_all_classes
-  weights_name_outs: weights_all_classes
+  epochs_num: 10
+  dataset_path: C:\Users\artyo\PycharmProjects\rcnn\combined_dataset
+  weights_name_outs: weights_combined_10epochs-2
 
 evaluate:
-  weights_name_in: weights_all_classes.pth
+  weights_name_in: weights_combined_10epochs.pth
   dataset_path: eval_data
-  detection_threshold: 0.8
+  detection_threshold: 0.6

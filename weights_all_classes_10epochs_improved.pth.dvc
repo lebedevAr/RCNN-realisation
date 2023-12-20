@@ -1,0 +1,5 @@
+outs:
+- md5: 9fd631211ed83f49f93cef011efac864
+  size: 165834798
+  hash: md5
+  path: weights_all_classes_10epochs_improved.pth

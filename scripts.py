@@ -74,21 +74,21 @@ def augment_images(dataset_path, mode="train", expected_images_num=100):
         fill_mode='nearest')
 
     for category in tqdm(categories, total=len(categories), desc='Augmenting Images'):
-        num_images = len(os.listdir('{}/{}/{}'.format(dataset_path, mode, category)))
+        num_images = len(os.listdir(r'{}\{}\{}'.format(dataset_path, mode, category)))
         if num_images < expected_images_num:
-            images_to_augment = os.listdir('{}/{}/{}'.format(dataset_path, mode, category))
+            images_to_augment = os.listdir(r'{}\{}\{}'.format(dataset_path, mode, category))
             num_augments_per_image = (expected_images_num - num_images) / num_images
             if num_augments_per_image == 0:
                 images_to_augment = np.random.choice(images_to_augment, (expected_images_num - num_images))
                 num_augments_per_image = 1
             for image_path in images_to_augment:
-                image = load_img('{}/{}/{}/{}'.format(dataset_path, mode, category, image_path))
+                image = load_img(r'{}\{}\{}\{}'.format(dataset_path, mode, category, image_path))
                 x = img_to_array(image)
                 x = x.reshape((1,) + x.shape)
                 x = add_noise(x)
                 i = 0
                 for _ in datagen.flow(x, batch_size=1,
-                                      save_to_dir='{}/{}/{}'.format(dataset_path, mode, category),
+                                      save_to_dir=r'{}\{}\{}'.format(dataset_path, mode, category),
                                       save_prefix=image_path[:-4], save_format='jpg'):
                     i += 1
                     if i > num_augments_per_image:
@@ -97,13 +97,8 @@ def augment_images(dataset_path, mode="train", expected_images_num=100):
 
 
 if __name__ == '__main__':
-    #augment_images(r'C:\Users\artyo\Desktop\images', 'train', 80)
-    dirr = r"C:\Users\artyo\PycharmProjects\rcnn\dataset_all_classes"
-    # rewrite_annotations(dirr)
+    #dirr = r'C:\Users\artyo\Desktop\imgs\train'
+    #augment_images(r'C:\Users\artyo\PycharmProjects\rcnn\new_eval_data', 'train', 100)
+    dirr = r"C:\Users\artyo\PycharmProjects\rcnn\eval_data_2\annotations"
     k = 0
-    for a in os.listdir(rf'{dirr}\annotations'):
-        tree = ET.parse(rf'{dirr}\annotations\{a}')
-        root = tree.getroot()
-        if not os.path.exists(rf'{dirr}\images\{root.find("filename").text}'):
-            k += 1
-    print(k)
+    rewrite_annotations(dirr)
